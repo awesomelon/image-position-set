@@ -1,0 +1,24 @@
+.dropzone {
+	border: 2px dashed #0087f7;
+	border-radius: 5px;
+	background: white;
+	padding: 54px 54px;
+	width: 540px;
+	float: left;
+}
+
+.dropzone,
+.dropzone * {
+	box-sizing: border-box;
+}
+
+.dz-message {
+	text-align: center;
+	margin: 2em 0;
+	font-weight: 400;
+	flex: 1;
+}
+
+.dz-clickable {
+	cursor: pointer;
+}
