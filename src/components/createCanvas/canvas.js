@@ -1,89 +1,74 @@
-import React, { useEffect } from 'react';
-import './canvas.css';
+import React, { useState, useRef, useEffect } from 'react';
 import interact from 'interactjs';
+import { createElementFunc, appendEl } from '../../util';
+import './canvas.css';
 
-const dragMoveListener = event => {
-	var target = event.target;
-	// keep the dragged position in the data-x/data-y attributes
-	var x = (parseFloat(target.getAttribute('data-x')) || 0) + event.dx;
-	var y = (parseFloat(target.getAttribute('data-y')) || 0) + event.dy;
-	// translate the element
-	target.style.webkitTransform = target.style.transform = 'translate(' + x + 'px, ' + y + 'px)';
-	// update the posiion attributes
-	target.setAttribute('data-x', x);
-	target.setAttribute('data-y', y);
-	target.style.cssText = `cursor:grab; position:absolute; left:${x}px; top:${y}px`;
-};
-
-const dragImageEnd = (e, parent, className) => {
-	if (e.type === 'dragend') {
-		let image = new Image();
-		if (!e.target.src) return;
-		image.src = e.target.src;
-		image.style.cssText = `cursor:grab; position:absolute;`;
-		image.className = className;
-		parent.appendChild(image);
-		interact(image).draggable({
-			inertia: true,
-			modifiers: [
-				interact.modifiers.restrictRect({
-					// restriction: 'parent',
-					endOnly: true
-				})
-			],
-			autoScroll: true,
-
-			onmove: dragMoveListener,
-			onend: function(event) {
-				console.log('moved a distance of ' + Math.sqrt((Math.pow(event.pageX - event.x0, 2) + Math.pow(event.pageY - event.y0, 2)) | 0).toFixed(2) + 'px');
-			}
-		});
-	}
+const CreateList = ({ data, dragEnd }) => {
+	return (
+		<>
+			{data.map((img, idx) => {
+				if (!img.src) return;
+				return (
+					<li className={`files${idx}`} key={idx} onDragEnd={e => dragEnd(e)}>
+						<img src={img.src} alt='' />
+						<button className='xButton' value='X'>
+							X
+						</button>
+						<button className='oButton' value='O'>
+							O
+						</button>
+						<input type='text' placeholder='id 입력' />
+					</li>
+				);
+			})}
+		</>
+	);
 };
 
 const CreateCanvas = ({ data }) => {
-	useEffect(() => {
-		const wrap = document.querySelector('.canvas-wrap-bg ul');
-		let li = document.createElement('li');
-		let image = new Image();
-		let button = document.createElement('button');
-		button.value = 'X';
-		button.innerText = 'X';
-		button.addEventListener('click', e => {
-			Array.from(document.querySelectorAll(`.${e.target.parentNode.className}`)).map(t => {
-				t.parentNode.removeChild(t);
-			});
-		});
-		const roots = document.querySelector('.drag-zone');
-		data.map((img, idx) => {
-			if (!img.src) return;
-			image = new Image();
-			image.src = img.src;
-			image.style.width = '100%';
-			image.style.height = '100%';
-			li = document.createElement('li');
-			li.classList.add(`file${idx}`);
-			li.setAttribute('draggable', true);
-			li.ondragend = e => {
-				dragImageEnd(e, roots, `file${idx}`);
-			};
+	const dragzone = useRef();
+	const dragMoveListener = event => {
+		const target = event.target;
+		const x = Math.floor(parseFloat(target.getAttribute('data-x')) || 0) + event.dx;
+		const y = Math.floor(parseFloat(target.getAttribute('data-y')) || 0) + event.dy;
+		target.style.webkitTransform = target.style.transform = 'translate(' + x + 'px, ' + y + 'px)';
+		target.setAttribute('data-x', x);
+		target.setAttribute('data-y', y);
+		target.children[0].innerText = `top:${y}px, left:${x}px`;
+	};
 
-			li.id = idx;
-			image.onload = () => {
-				li.appendChild(image);
-				li.appendChild(button);
-			};
-		});
-		if (!image.src) return;
-		wrap.appendChild(li);
-	});
+	const dragImageEnd = e => {
+		if (e.type === 'dragend') {
+			let image = new Image();
+			if (!e.target.src) return;
+			image.src = e.target.src;
+			let p = document.createElement('p');
+			let div = createElementFunc('div', { class: 'files', style: 'cursor:grab; position:absolute;' });
+			appendEl(div, p);
+			appendEl(div, image);
+			appendEl(dragzone.current, div);
+			interact(div).draggable({
+				inertia: true,
+				modifiers: [
+					interact.modifiers.restrictRect({
+						restriction: 'parent',
+						endOnly: true
+					})
+				],
+				autoScroll: true,
+				onmove: dragMoveListener
+			});
+		}
+	};
 
 	return (
 		<>
-			<div className="canvas-wrap-bg">
-				<ul></ul>
+			<div className='canvas-wrap-bg'>
+				<ul>
+					<CreateList data={data} dragEnd={dragImageEnd} />
+				</ul>
 			</div>
-			<div className="drag-zone"></div>
+			<div className='drag-zone' ref={dragzone}></div>
 		</>
 	);
 };
